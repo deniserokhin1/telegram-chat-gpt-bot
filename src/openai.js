@@ -21,7 +21,9 @@ class OpenAI {
                 model: 'gpt-3.5-turbo',
                 messages,
             })
-            return responce.data.choices[0].message
+            return responce
+                ? responce.data.choices[0].message.content
+                : responce
         } catch (e) {
             console.log('Error while chat', e.message)
         }

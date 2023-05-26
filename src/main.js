@@ -4,9 +4,10 @@ import { code } from 'telegraf/format'
 import config from 'config'
 import { ogg } from './ogg.js'
 import { openai } from './openai.js'
+import { textForEmptyResponce } from './const.js'
 
-const INITIAL_SESSION = {
-    messages: [],
+function setInitialSession() {
+    return { messages: [] }
 }
 
 const bot = new Telegraf(
@@ -20,12 +21,12 @@ const bot = new Telegraf(
 bot.use(session())
 
 bot.command('new', async (ctx) => {
-    ctx.session = INITIAL_SESSION
+    ctx.session = setInitialSession()
     await ctx.reply('Жду вашего сообщения.')
 })
 
 bot.command('start', async (ctx) => {
-    ctx.session = INITIAL_SESSION
+    ctx.session = setInitialSession()
     await ctx.reply(
         '👋 Привет! Я Telegram бот, разработанный Денисом Ерохиным на платформе Node.js с использованием библиотеки Telegraf.js. Я работаю на базе API OpenAI. Вы можете общаться со мной текстом и голосом.',
         Markup.keyboard([['🗑️ Очистить контекст']]).resize()
@@ -33,8 +34,8 @@ bot.command('start', async (ctx) => {
 })
 
 bot.hears('🗑️ Очистить контекст', async (ctx) => {
-    ctx.session = INITIAL_SESSION
     try {
+        ctx.session = setInitialSession()
         await ctx.reply('Жду вашего сообщения.')
     } catch (error) {
         console.log('Error while clear context', error)
@@ -42,9 +43,9 @@ bot.hears('🗑️ Очистить контекст', async (ctx) => {
 })
 
 bot.on(message('voice'), async (ctx) => {
-    ctx.session ??= INITIAL_SESSION
     try {
-        await ctx.reply(code('Сообщение принянл. Жду ответ от сервера.'))
+        ctx.session ??= setInitialSession()
+        await ctx.reply(code('Сообщение принял. Жду ответ от сервера.'))
 
         const link = await ctx.telegram.getFileLink(ctx.message.voice.file_id)
         const userId = String(ctx.message.from.id)
@@ -57,46 +58,49 @@ bot.on(message('voice'), async (ctx) => {
 
         ctx.session.messages.push({ role: openai.roles.USER, content: text })
 
+        ctx.sendChatAction('typing')
+
         const responce = await openai.chat(ctx.session.messages)
 
-        if (!responce.content) {
-            responce.content =
-                'Произошла ошибка на стороне OpenAI. Попробуйте сделать запрос ещё раз.'
+        if (!responce) {
+            setInitialSession()
+            await ctx.reply(textForEmptyResponce)
+        } else {
+            ctx.session.messages.push({
+                role: openai.roles.ASSISTANT,
+                content: responce,
+            })
+            await ctx.reply(responce)
         }
-
-        ctx.session.messages.push({
-            role: openai.roles.ASSISTANT,
-            content: responce.content,
-        })
-
-        await ctx.reply(responce.content)
     } catch (error) {
         console.log('Error', error)
     }
 })
 
 bot.on(message('text'), async (ctx) => {
-    ctx.session ??= INITIAL_SESSION
     try {
-        await ctx.reply(code('Сообщение принянл. Жду ответ от сервера.'))
+        ctx.session ??= setInitialSession()
+
+        await ctx.reply(code('Сообщение принял. Жду ответ от сервера.'))
 
         const text = ctx.message.text
 
         ctx.session.messages.push({ role: openai.roles.USER, content: text })
 
+        ctx.sendChatAction('typing')
+
         const responce = await openai.chat(ctx.session.messages)
 
-        if (!responce.content) {
-            responce.content =
-                'Произошла ошибка на стороне OpenAI. Попробуйте сделать запрос ещё раз.'
+        if (!responce) {
+            setInitialSession()
+            await ctx.reply(textForEmptyResponce)
+        } else {
+            ctx.session.messages.push({
+                role: openai.roles.ASSISTANT,
+                content: responce,
+            })
+            await ctx.reply(responce)
         }
-
-        ctx.session.messages.push({
-            role: openai.roles.ASSISTANT,
-            content: responce.content,
-        })
-
-        await ctx.reply(responce.content)
     } catch (error) {
         console.log('Error', error)
     }
