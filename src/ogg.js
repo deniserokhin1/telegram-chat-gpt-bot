@@ -58,13 +58,11 @@ class OggConverter {
             responce.data.pipe(stream)
 
             // дожидаемся окончания записи
-            await new Promise((resolve) => {
+            return new Promise((resolve) => {
                 stream.on('finish', () => {
                     resolve(oggPath)
                 })
             })
-
-            return oggPath
         } catch (error) {
             console.log('Error while creating ogg', error.message)
         }
