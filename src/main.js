@@ -1,17 +1,27 @@
-import { Telegraf, Markup, session,  } from 'telegraf'
+import { Telegraf, Markup, session } from 'telegraf'
 import { message } from 'telegraf/filters'
 import { code } from 'telegraf/format'
 import config from 'config'
 import { ogg } from './ogg.js'
 import { openai } from './openai.js'
-import { clearContext, errorResponse, loadingMessage } from './const.js'
+import {
+    clearContext,
+    cleared,
+    errorResponse,
+    helloMessage,
+    loadingMessage,
+} from './const.js'
 
 function setInitialSession() {
     return { messages: [] }
 }
 
 const bot = new Telegraf(
-    config.get(process.env.NODE_ENV === 'development' ? 'TELEGRAM_TOKEN_DEV' : 'TELEGRAM_TOKEN')
+    config.get(
+        process.env.NODE_ENV === 'development'
+            ? 'TELEGRAM_TOKEN_DEV'
+            : 'TELEGRAM_TOKEN'
+    )
 )
 
 bot.use(session())
@@ -19,17 +29,14 @@ bot.use(session())
 bot.command('start', async (ctx) => {
     ctx.session = setInitialSession()
 
-    await ctx.reply(
-        '👋 Привет! Я Telegram бот, разработанный Денисом Ерохиным на платформе Node.js с использованием библиотеки Telegraf.js. Я работаю на базе API OpenAI. Вы можете общаться со мной текстом и голосом.',
-        Markup.keyboard([[clearContext]]).resize()
-    )
+    await ctx.reply(helloMessage, Markup.keyboard([[clearContext]]).resize())
 })
 
 bot.hears(clearContext, (ctx) => {
     try {
         ctx.session = setInitialSession()
 
-        ctx.reply('Контекст очищен.')
+        ctx.reply(cleared)
     } catch (error) {
         console.log('Error while clear context', error)
     }
@@ -40,9 +47,9 @@ bot.on(message('text'), async (ctx) => {
         ctx.session ??= setInitialSession()
 
         ctx.reply(code(loadingMessage))
-        ctx.sendChatAction('typing')
-
         const text = ctx.message.text
+
+        ctx.sendChatAction('typing')
 
         getResponse(text, ctx)
             .then((result) => ctx.reply(result))
@@ -60,13 +67,14 @@ bot.on(message('voice'), async (ctx) => {
         ctx.session ??= setInitialSession()
 
         ctx.reply(code(loadingMessage))
-        ctx.sendChatAction('typing')
 
         const userId = String(ctx.message.from.id)
         const link = await ctx.telegram.getFileLink(ctx.message.voice.file_id)
 
         const oggPath = await ogg.create(link.href, userId)
         const mp3Path = await ogg.toMp3(oggPath, userId)
+
+        ctx.sendChatAction('typing')
 
         openai.transcription(mp3Path).then(({ data }) => {
             ctx.reply(code(`Ваш запрос: ${data.text}`))
@@ -90,7 +98,13 @@ function getResponse(text, ctx) {
         openai
             .chat(ctx.session.messages)
             .then((response) => {
-                resolve(response.data.choices[0].message.content)
+                const replyContent = response.data.choices[0].message.content
+                const newServerMessage = setNewMessage(
+                    openai.roles.ASSISTANT,
+                    replyContent
+                )
+                ctx.session.messages.push(newServerMessage)
+                resolve(replyContent)
             })
             .catch((e) => {
                 reject({
