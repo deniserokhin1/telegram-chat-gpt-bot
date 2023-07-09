@@ -7,3 +7,23 @@ export async function removeFile(path) {
         console.log('Error while removing file', e.message)
     }
 }
+
+export function setNewMessage(role, content) {
+    return { role, content }
+}
+
+export function setInitialSession() {
+    return {
+        messages: [],
+        mode: '',
+        game: {
+            allCountries: null,
+            shuffledCountries: null,
+            messages: [],
+            step: 0,
+            countSteps: 0,
+            lastMessageId: null,
+            erros: [],
+        },
+    }
+}
