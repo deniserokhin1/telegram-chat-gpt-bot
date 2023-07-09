@@ -32,7 +32,10 @@ class OpenAI {
 
     async transcription(filePath) {
         try {
-            return await this.openai.createTranscription(createReadStream(filePath), 'whisper-1')
+            return await this.openai.createTranscription(
+                createReadStream(filePath),
+                'whisper-1'
+            )
         } catch (e) {
             console.log('Error while transcription', e.message)
         }

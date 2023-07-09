@@ -23,7 +23,7 @@ export function setInitialSession() {
             step: 0,
             countSteps: 0,
             lastMessageId: null,
-            erros: [],
+            erros: null,
         },
     }
 }

@@ -163,6 +163,7 @@ async function answerResponse(response, ctx) {
             .then(async (result) => {
                 await ctx.reply(result)
                 ctx.session.game.countSteps = null
+                ctx.session.game.lastMessageId = null
             })
             .catch((e) => {
                 console.log('Error while getting finale response', e)
