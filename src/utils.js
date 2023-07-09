@@ -16,14 +16,18 @@ export function setInitialSession() {
     return {
         messages: [],
         mode: '',
-        game: {
-            allCountries: null,
-            shuffledCountries: null,
-            messages: [],
-            step: 0,
-            countSteps: 0,
-            lastMessageId: null,
-            erros: null,
-        },
+        game: setInitialGame(),
+    }
+}
+
+export function setInitialGame() {
+    return {
+        allCountries: null,
+        shuffledCountries: null,
+        messages: [],
+        step: 0,
+        countSteps: 0,
+        lastMessageId: null,
+        erros: null,
     }
 }

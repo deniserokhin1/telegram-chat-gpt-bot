@@ -24,7 +24,7 @@ import {
     weatherMessage,
     weatherMode,
 } from './const.js'
-import { setInitialSession, setNewMessage } from './utils.js'
+import { setInitialGame, setInitialSession, setNewMessage } from './utils.js'
 import { weatherCL } from './weather.js'
 import { country } from './countries.js'
 
@@ -48,12 +48,13 @@ bot.hears(clearContext, async (ctx) => {
     try {
         if (ctx.session.game.lastMessageId) {
             await ctx.deleteMessage(ctx.session.game.lastMessageId)
-            ctx.session.game.lastMessageId = null
+            ctx.session.game = setInitialGame()
         }
         ctx.session = setInitialSession()
         await ctx.reply(cleared)
     } catch (error) {
         console.log('Error while clear context', error)
+        await ctx.reply('Выпоните команду /start')
     }
 })
 
@@ -129,6 +130,8 @@ bot.action('50', async (ctx) => {
 function handleAnswer(ctx, typeAnswer) {
     let textResponse = null
 
+    console.log('ctx:', ctx.session.game.step)
+
     switch (typeAnswer) {
         case 'wrong':
             textResponse = `❌ ${
@@ -162,8 +165,7 @@ async function answerResponse(response, ctx) {
         getResponse('', ctx)
             .then(async (result) => {
                 await ctx.reply(result)
-                ctx.session.game.countSteps = null
-                ctx.session.game.lastMessageId = null
+                ctx.session.game = setInitialGame()
             })
             .catch((e) => {
                 console.log('Error while getting finale response', e)
@@ -182,7 +184,7 @@ async function setMode(ctx, mode, replyMessage) {
 
         if (ctx.session.game.lastMessageId) {
             await ctx.deleteMessage(ctx.session.game.lastMessageId)
-            ctx.session.game.lastMessageId = null
+            ctx.session.game = setInitialGame()
         }
 
         if (mode !== GAME) return
@@ -260,7 +262,7 @@ async function getAnswer(ctx) {
             Markup.inlineKeyboard(answers)
         )
         ctx.session.game.lastMessageId = message.message_id
-    } catch (error) {
+    } catch (e) {
         console.log('Error while getting new question', e)
     }
 }
