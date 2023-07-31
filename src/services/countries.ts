@@ -1,17 +1,24 @@
 import axios from 'axios'
+import { ICountry } from '../models/types'
 
 class Country {
-    async getCountries(region) {
-        const q = region && region !== 'all' ? `region/${region}` : 'all'
+    async getCountries(region: string) {
+        const path = region === 'all' ? 'all' : `region/${region}`
+
         let arrayCountries = null
+
         try {
-            const result = await axios(`https://restcountries.com/v3.1/${q}`)
+            const result = await axios.get<ICountry[]>(
+                `https://restcountries.com/v3.1/${path}`
+            )
+
             arrayCountries = result.data.map((i) => {
                 return {
                     country: i.translations.rus.common,
                     flag: i.flag,
                 }
             })
+
             return arrayCountries
         } catch (e) {
             console.log('Error while getting CountriesAPI server response', e)
@@ -19,4 +26,4 @@ class Country {
     }
 }
 
-export const country = new Country()
+export const countriesClass = new Country()

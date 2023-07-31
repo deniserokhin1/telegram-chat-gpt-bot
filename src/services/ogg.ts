@@ -5,11 +5,10 @@ import ffmpeg from 'fluent-ffmpeg'
 import installer from '@ffmpeg-installer/ffmpeg'
 import { createWriteStream } from 'fs'
 import { dirname, resolve } from 'path'
-import { fileURLToPath } from 'url'
-import { removeFile } from './utils.js'
+import { removeFile } from '../utils'
 
 // создаем путь до корневой папки, в которой лежит код
-const __dirname = dirname(fileURLToPath(import.meta.url))
+// const __dirname = dirname(fileURLToPath(import.meta.url))
 
 class OggConverter {
     constructor() {
@@ -17,12 +16,12 @@ class OggConverter {
         ffmpeg.setFfmpegPath(installer.path)
     }
 
-    toMp3(oggFile, output) {
+    toMp3(oggFile: string, output: string) {
         try {
             // с помощью dirname(oggFile) получаем путь до ogg файла
             const outputPath = resolve(dirname(oggFile), `${output}.mp3`)
 
-            return new Promise((resolve, reject) => {
+            return new Promise<string>((resolve, reject) => {
                 ffmpeg(oggFile)
                     .inputOption('-t 30')
                     .output(outputPath)
@@ -35,18 +34,18 @@ class OggConverter {
                     })
                     .run()
             })
-        } catch (error) {
+        } catch (error: any) {
             console.log('Error while converting to mp3', error.message)
         }
     }
 
-    async create(url, filename) {
+    async create(url: string, filename: string) {
         try {
             // создаем путь до места, где будет лежать ogg файл
             const oggPath = resolve(__dirname, '../voices', `${filename}.ogg`)
 
             // указываем, что хотим получить ответ в виде потока
-            const responce = await axios({
+            const response = await axios({
                 method: 'get',
                 url,
                 responseType: 'stream',
@@ -55,15 +54,15 @@ class OggConverter {
             // создаем поток для записи
             const stream = createWriteStream(oggPath)
             // записываем результат запроса в поток
-            responce.data.pipe(stream)
+            response.data.pipe(stream)
 
             // дожидаемся окончания записи
-            return new Promise((resolve) => {
+            return new Promise<string>((resolve) => {
                 stream.on('finish', () => {
                     resolve(oggPath)
                 })
             })
-        } catch (error) {
+        } catch (error: any) {
             console.log('Error while creating ogg', error.message)
         }
     }

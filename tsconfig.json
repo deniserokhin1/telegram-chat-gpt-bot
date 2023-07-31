@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "strict": true,
+        "outDir": "./dist",
+        "noImplicitAny": true,
+        "module": "NodeNext",
+        "target": "es2020",
+        "allowJs": true,
+        "moduleResolution": "NodeNext",
+        "allowSyntheticDefaultImports": true
+    }
+}

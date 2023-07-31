@@ -1,12 +1,13 @@
-import config from 'config'
 import axios from 'axios'
+import { configService } from '../config/config.service'
 
 class Weather {
-    constructor(apiYaKey) {
+    token: string
+    constructor(apiYaKey: string) {
         this.token = apiYaKey
     }
 
-    async getWeather(city) {
+    async getWeather(city: string) {
         const params = {
             q: city,
             units: 'metric',
@@ -26,4 +27,4 @@ class Weather {
     }
 }
 
-export const weatherCL = new Weather(config.get('WEATHER'))
+export const weatherClass = new Weather(configService.get('WEATHER'))
