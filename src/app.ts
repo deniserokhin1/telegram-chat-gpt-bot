@@ -13,7 +13,7 @@ import { WeatherHear } from './hears/weather.hear'
 import { GameHear } from './hears/game.hear'
 import { FlagsActions } from './actions/flags.actions'
 
-const MODE = (process.env.mode as Mode) === 'development' ? 'DEV' : 'PROD'
+export const MODE = (process.env.mode as Mode) === 'development' ? 'DEV' : 'PROD'
 
 class Bot {
     bot: Telegraf<IBotContext>

@@ -1,8 +1,10 @@
 import { Configuration, OpenAIApi } from 'openai'
 import { createReadStream } from 'fs'
 import { IMessage } from '../context/context.interface'
-import { IErrorResponseOpenAI } from '../models/types'
+import { IErrorResponseOpenAI, Mode } from '../models/types'
 import { configService } from '../config/config.service'
+
+const MODE = (process.env.mode as Mode) === 'development' ? 'DEV' : 'PROD'
 
 class OpenAI {
     openai: OpenAIApi
@@ -43,4 +45,4 @@ class OpenAI {
     }
 }
 
-export const openai = new OpenAI(configService.get('OPENAI_KEY'))
+export const openai = new OpenAI(configService.get(`OPENAI_KEY_${MODE}`))
