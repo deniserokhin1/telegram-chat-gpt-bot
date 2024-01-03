@@ -229,8 +229,8 @@ class FlagsActions extends command_class_1.Command {
     async wantPlayAgain(ctx) {
         const message = await ctx.reply('Сыграть ещё раз?', telegraf_1.Markup.inlineKeyboard([
             [
-                telegraf_1.Markup.button.callback('Да', 'playAgain'),
-                telegraf_1.Markup.button.callback('Нет', 'stopPlay'),
+                telegraf_1.Markup.button.callback('Да', 'play-again'),
+                telegraf_1.Markup.button.callback('Нет', 'stop-play'),
             ],
         ]));
         ctx.session.idLastMessage = message.message_id;
