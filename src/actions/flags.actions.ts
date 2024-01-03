@@ -309,8 +309,8 @@ export class FlagsActions extends Command {
             'Сыграть ещё раз?',
             Markup.inlineKeyboard([
                 [
-                    Markup.button.callback('Да', 'playAgain'),
-                    Markup.button.callback('Нет', 'stopPlay'),
+                    Markup.button.callback('Да', 'play-again'),
+                    Markup.button.callback('Нет', 'stop-play'),
                 ],
             ])
         )
