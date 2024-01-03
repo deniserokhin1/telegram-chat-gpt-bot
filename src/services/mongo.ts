@@ -47,14 +47,16 @@ class Mongo {
     }
 
     async getMode(id: number) {
-        const user = await this.getUser(id)
-        return user?.mode as Mode
+        try {
+            const user = await this.getUser(id)
+            return user?.mode as Mode
+        } catch (e) {
+            console.log('Error while getting mode', e)
+        }
     }
 
     async setMode(id: number, mode: Mode, first_name: string) {
         const user = await this.getUser(id)
-
-        console.log('mode:', mode)
 
         user
             ? await this.users.updateOne({ id }, { $set: { mode } })
@@ -67,9 +69,14 @@ class Mongo {
     }
 
     async deleteMessages(id: number) {
-        const user = await this.getUser(id)
-        if (!user) return
-        await this.users.updateOne({ id }, { $set: { messages: [] } })
+        try {
+            const user = await this.getUser(id)
+            if (!user) return
+            await this.users.updateOne({ id }, { $set: { messages: [] } })
+            console.log('delete')
+        } catch (e) {
+            console.log('Error while deleting messages:', e)
+        }
     }
 }
 

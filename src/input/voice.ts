@@ -1,12 +1,11 @@
-import { IBotContext } from '../context/context.interface'
-import { loadingMessage } from '../const'
-import { Command } from '../commands/command.class'
+import { EventEmitter } from 'events'
+import { Telegraf } from 'telegraf'
 import { message } from 'telegraf/filters'
 import { code } from 'telegraf/format'
-import { openai } from '../services/openai'
-import { Telegraf } from 'telegraf'
+import { Command } from '../commands/command.class'
+import { IBotContext } from '../context/context.interface'
 import { ogg } from '../services/ogg'
-import { EventEmitter } from 'events'
+import { openai } from '../services/openai'
 
 export const eventEmitter = new EventEmitter()
 

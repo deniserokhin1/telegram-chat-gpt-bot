@@ -17,10 +17,10 @@ export class ChatGPTHear extends Command {
             const { id, first_name } = ctx.from
             const { idLastMessage } = ctx.session
 
-            mongoClient.setMode(id, 'OPENAI', first_name)
+            mongoClient.setMode(id, 'CHAT', first_name)
 
             deleteLastMessage(idLastMessage, ctx)
-
+            
             await ctx.reply(chatGPTMode)
         })
     }

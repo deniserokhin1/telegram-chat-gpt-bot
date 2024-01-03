@@ -13,6 +13,7 @@ export class ConfigService implements IConfigService {
         }
         this.config = parsed
     }
+    
     get(key: string): string {
         const res = this.config[key]
         if (!res) {

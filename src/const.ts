@@ -13,6 +13,7 @@ export const chatGPT = '🤖 ChatGPT'
 export const game = '🎮 Игра "Флаги"'
 export const helloMessage =
     '👋 Привет! Я Telegram бот, разработанный Денисом Ерохиным на платформе Node.js с использованием библиотеки Telegraf.js. Я работаю на базе API OpenAI. Вы можете общаться со мной текстом и голосом.'
+export const endFlagGame = 'Конец игры. Считаем статистику.'
 
 export const cleared = 'Контекст очищен.'
 export const readMode = 'Вы вошли в режим чтения статьи.'
@@ -26,9 +27,6 @@ export const GAME = 'GAME'
 
 interface IErrorResponse {
     [key: number]: string
-    400: string
-    429: string
-    503: string
     null: string
 }
 
@@ -45,12 +43,6 @@ export const regions = {
     oceania: 'Oceania',
     americas: 'Americas',
     africa: 'Africa',
-}
-
-export function setAIGuide(counSteps: number, erros: string[]) {
-    return `В игре 'Флаги' было задано ${counSteps} вопросов. Ошибки: ${
-        erros.length ? erros : erros.length
-    }. Пришли кратку статистику по этой игре.`
 }
 
 interface IWeatherConditions {
@@ -114,16 +106,6 @@ export const weatherConditions: IWeatherConditions = {
     803: '☁️',
     804: '☁️',
 }
-
-// const weatherResponse = (data) => {
-//     return `
-//     🌡️ Текущая температура: ${data.main.temp}°C
-//     🌡️ Ощущается как: ${data.main.feels_like}°C
-//     🔽 Минимальная температура сегодня: ${data.main.temp_min}°C
-//     🔼 Максимальная температура сегодня: ${data.main.temp_max}°C
-//     💧 Влажность: ${data.main.humidity}%
-//     `
-// }
 
 // export const weatherMessage = (data) => {
 //     const dateOptions = { hour: 'numeric', minute: 'numeric' }

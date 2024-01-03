@@ -21,7 +21,7 @@ export interface ISessionData {
     errors: string[]
 }
 
-export type Mode = 'OPENAI' | 'WEATHER' | 'GAME'
+export type Mode = 'CHAT' | 'WEATHER' | 'GAME'
 
 export interface UserDocument {
     _id: ObjectId

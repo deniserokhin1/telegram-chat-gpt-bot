@@ -17,13 +17,13 @@ export class TextHandler extends Command {
     constructor(bot: Telegraf<IBotContext>) {
         super(bot)
 
-        eventEmitter.on('voicetotext', async (ctx, voicetotext) => {
+        eventEmitter.on('voicetotext', (ctx, voicetotext) => {
             this.prepareRequest(ctx, voicetotext)
         })
     }
 
     handle(): void {
-        this.bot.on(message('text'), async (ctx) => {
+        this.bot.on(message('text'), (ctx) => {
             this.prepareRequest(ctx)
         })
     }
@@ -42,7 +42,7 @@ export class TextHandler extends Command {
             const mode = await mongoClient.getMode(id)
 
             switch (mode) {
-                case 'OPENAI':
+                case 'CHAT':
                     await ctx.reply(code(loadingMessage))
                     ctx.sendChatAction('typing')
 
@@ -66,7 +66,7 @@ export class TextHandler extends Command {
             }
         } catch (e) {
             console.log('Error while preparing request', e)
-            ctx.reply('Полжалуйста, выполните команду /start')
+            ctx.reply('Пожалуйста, выполните команду /start')
         }
     }
 
@@ -93,9 +93,7 @@ export class TextHandler extends Command {
             })
             .catch((e: IErrorResponseOpenAI) => {
                 console.log('Error while getting text response from OpenAI')
-                const response = errorResponse[e.code]
-                    ? errorResponse[e.code]
-                    : errorResponse.null
+                const response = errorResponse[e.code] ? errorResponse[e.code] : errorResponse.null
                 ctx.reply(response)
             })
     }

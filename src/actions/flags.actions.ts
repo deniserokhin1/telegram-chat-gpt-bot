@@ -5,9 +5,11 @@ import { Command } from '../commands/command.class'
 import { AnswerAction, IActions, IResultCountriesArray } from '../models/types'
 import { countriesClass } from '../services/countries'
 import { openai } from '../services/openai'
-import { setChatMessage, setInitialSession } from '../utils'
+import { setAIGuide, setChatMessage, setInitialSession } from '../utils'
 import { ChatCompletionRequestMessageRoleEnum } from 'openai'
-import { setAIGuide } from '../const'
+import { chatGPTMode, endFlagGame } from '../const'
+import { mongoClient } from '../services/mongo'
+import { markupFlags } from '../hears/game.hear'
 
 export class FlagsActions extends Command {
     actions: IActions[] = []
@@ -19,6 +21,8 @@ export class FlagsActions extends Command {
         this.regionHandle = this.regionHandle.bind(this)
         this.sendRegions = this.sendRegions.bind(this)
         this.answerHandle = this.answerHandle.bind(this)
+        this.startGameAgain = this.startGameAgain.bind(this)
+        this.stopPlay = this.stopPlay.bind(this)
 
         this.actions = [
             // {
@@ -95,9 +99,21 @@ export class FlagsActions extends Command {
             },
             {
                 action: 'wrong',
-                text: '— верный ответ',
                 type: 'answer',
+                text: '— верный ответ',
                 callback: this.answerHandle,
+            },
+            {
+                action: 'play-again',
+                type: 'answer',
+                text: 'Играем ещё раз.',
+                callback: this.startGameAgain,
+            },
+            {
+                action: 'stop-play',
+                type: 'answer',
+                text: 'Вы вошли в режим общения с ИИ.',
+                callback: this.stopPlay,
             },
         ]
     }
@@ -107,14 +123,19 @@ export class FlagsActions extends Command {
             const { callback, text, type, action } = item
 
             this.bot.action(action, async (ctx) => {
-                await ctx.answerCbQuery()
-                const { message } = ctx.update.callback_query
+                try {
+                    const { message } = ctx.update.callback_query
 
-                type === 'answer'
-                    ? await ctx.deleteMessage(message?.message_id)
-                    : await ctx.editMessageText(text)
+                    await ctx.answerCbQuery()
 
-                callback(ctx, action)
+                    type === 'answer'
+                        ? await ctx.deleteMessage(message?.message_id)
+                        : await ctx.editMessageText(text)
+
+                    callback(ctx, action)
+                } catch (error) {
+                    console.log(`Error while handling action. Error: ${error}`)
+                }
             })
         })
     }
@@ -128,6 +149,7 @@ export class FlagsActions extends Command {
         >,
         countSteps: number | string
     ) {
+        ctx.session = setInitialSession()
         ctx.session.countSteps = Number(countSteps)
 
         const message = await ctx.reply(
@@ -156,7 +178,7 @@ export class FlagsActions extends Command {
     ) {
         countriesClass
             .getCountries(region)
-            .then(async (result: IResultCountriesArray[] | undefined) => {
+            .then((result: IResultCountriesArray[] | undefined) => {
                 if (!result) return
                 ctx.session.allCountries = [...result]
                 this.randomizeCountriesArray(ctx, result)
@@ -166,14 +188,14 @@ export class FlagsActions extends Command {
             )
     }
 
-    async randomizeCountriesArray(
+    randomizeCountriesArray(
         ctx: NarrowedContext<
             IBotContext & { match: RegExpExecArray },
             Update.CallbackQueryUpdate<CallbackQuery>
         >,
         countriesArray: IResultCountriesArray[]
     ) {
-        const shuffledArray = countriesArray
+        const shuffledArray = [...countriesArray]
             .sort(() => Math.random() - 0.5)
             .slice(0, ctx.session.countSteps)
         ctx.session.shuffledCountries = shuffledArray
@@ -200,10 +222,7 @@ export class FlagsActions extends Command {
             const buttonsAnswer = four_countries
                 .map((i, index) => {
                     const item = [
-                        Markup.button.callback(
-                            i.country,
-                            index === 0 ? 'right' : 'wrong'
-                        ),
+                        Markup.button.callback(i.country, index === 0 ? 'right' : 'wrong'),
                     ]
                     return item
                 })
@@ -231,9 +250,11 @@ export class FlagsActions extends Command {
     ) {
         let textResponse = null
 
-        const { shuffledCountries, errors, flagStep: step } = ctx.session
+        const { shuffledCountries, flagStep: step } = ctx.session
 
-        const country = shuffledCountries[step].country
+        const country = shuffledCountries[step]?.country
+
+        if (!country) return
 
         typeAnswer === 'wrong'
             ? (textResponse = `❌ ${country} — верный ответ.`)
@@ -241,38 +262,90 @@ export class FlagsActions extends Command {
 
         if (typeAnswer === 'wrong') ctx.session.errors.push(country)
 
-        this.nextStep(ctx, textResponse)
+        ctx.reply(textResponse)
+
+        this.nextStep(ctx)
     }
 
     async nextStep(
         ctx: NarrowedContext<
             IBotContext & { match: RegExpExecArray },
             Update.CallbackQueryUpdate<CallbackQuery>
-        >,
-        response: string
+        >
     ) {
-        await ctx.reply(response)
         const { countSteps, flagStep: step, errors } = ctx.session
 
-        if (step >= countSteps - 1) {
-            await ctx.reply('Конец игры. Считаем статистику.')
-
-            const guideForAI = setAIGuide(countSteps, errors)
-            console.log('guideForAI:', guideForAI)
-
-            const data = [
-                setChatMessage(ChatCompletionRequestMessageRoleEnum.User, guideForAI),
-            ]
-
-            openai.chat(data).then(async (response) => {
-                const replyContent = response.data.choices[0].message?.content
-                ctx.reply(replyContent as string)
-            })
-            ctx.session.idLastMessage = 0
-            ctx.session.errors = []
+        if (step < countSteps - 1) {
+            ctx.session.flagStep += 1
+            this.getQuestion(ctx)
             return
         }
-        ctx.session.flagStep += 1
-        this.getQuestion(ctx)
+
+        await ctx.reply(endFlagGame)
+
+        const guideForAI = setAIGuide(countSteps, errors)
+
+        const dataForAI = [setChatMessage(ChatCompletionRequestMessageRoleEnum.User, guideForAI)]
+
+        openai
+            .chat(dataForAI)
+            .then(async (response) => {
+                const replyContent = response.data.choices[0].message?.content
+                await ctx.reply(replyContent as string)
+                this.wantPlayAgain(ctx)
+            })
+            .catch((e) => {
+                console.log('Error while getting statistic response from OpenAI', e)
+            })
+    }
+
+    async wantPlayAgain(
+        ctx: NarrowedContext<
+            IBotContext & { match: RegExpExecArray },
+            Update.CallbackQueryUpdate<CallbackQuery>
+        >
+    ) {
+        const message = await ctx.reply(
+            'Сыграть ещё раз?',
+            Markup.inlineKeyboard([
+                [
+                    Markup.button.callback('Да', 'playAgain'),
+                    Markup.button.callback('Нет', 'stopPlay'),
+                ],
+            ])
+        )
+
+        ctx.session.idLastMessage = message.message_id
+    }
+
+    async startGameAgain(
+        ctx: NarrowedContext<
+            IBotContext & { match: RegExpExecArray },
+            Update.CallbackQueryUpdate<CallbackQuery>
+        >
+    ) {
+        const message = await ctx.reply(
+            'Выберите количество флагов.',
+            Markup.inlineKeyboard([markupFlags])
+        )
+
+        ctx.session.idLastMessage = message.message_id
+    }
+
+    async stopPlay(
+        ctx: NarrowedContext<
+            IBotContext & { match: RegExpExecArray },
+            Update.CallbackQueryUpdate<CallbackQuery>
+        >
+    ) {
+        const first_name = ctx.from?.first_name
+        const id = ctx.from?.id
+
+        ctx.session.idLastMessage = null
+
+        if (id && first_name) {
+            mongoClient.setMode(id, 'CHAT', first_name)
+            await ctx.reply(chatGPTMode)
+        }
     }
 }

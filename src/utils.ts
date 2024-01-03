@@ -12,10 +12,7 @@ export async function removeFile(path: string) {
     }
 }
 
-export function setChatMessage(
-    role: ChatCompletionRequestMessageRoleEnum,
-    content: string
-) {
+export function setChatMessage(role: ChatCompletionRequestMessageRoleEnum, content: string) {
     return { role, content }
 }
 
@@ -24,7 +21,7 @@ export function setInitialSession(): ISessionData {
         countSteps: 0,
         allCountries: [],
         shuffledCountries: [],
-        idLastMessage: 0,
+        idLastMessage: null,
         flagStep: 0,
         errors: [],
     }
@@ -46,4 +43,10 @@ export async function deleteLastMessage(
     if (!id) return
     await ctx.deleteMessage(id)
     ctx.session.idLastMessage = null
+}
+
+export function setAIGuide(counSteps: number, erros: string[]) {
+    return `Игнорируй все предыдущие инструкции. Твоя задача посчитать игровую статистику на основе данных, которые тебе предоставляют. В игре 'Флаги' было задано ${counSteps} вопросов. Ошибки: ${
+        erros.length ? erros.join(', ') : 'нет, все верно.'
+    }. Пришли краткую статистику по этой "Флаги".`
 }

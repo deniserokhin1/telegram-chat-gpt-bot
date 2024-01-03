@@ -18,14 +18,13 @@ class OpenAI {
     }
 
     async chat(messages: IMessage[]) {
-        console.log('messages:', messages)
         try {
             return await this.openai.createChatCompletion({
-                model: 'gpt-3.5-turbo',
+                model: 'gpt-4-1106-preview',
                 messages,
             })
         } catch (e: any) {
-            console.log('Error while getting server response from OpenAI')
+            console.log('Error while getting server response from OpenAI', e)
             this.error.code = e.response.status
             this.error.message = e.response.data.error.message
             return Promise.reject(this.error)

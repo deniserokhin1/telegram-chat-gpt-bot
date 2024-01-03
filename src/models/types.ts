@@ -20,11 +20,13 @@ export type Action =
     | 'all'
     | 'right'
     | 'wrong'
+    | 'play-again'
+    | 'stop-play'
 
 export interface IActions {
     action: Action
     text: string
-    type: Type
+    type?: Type
     callback: any
 }
 

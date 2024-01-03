@@ -53,6 +53,7 @@ class OggConverter {
 
             // создаем поток для записи
             const stream = createWriteStream(oggPath)
+            
             // записываем результат запроса в поток
             response.data.pipe(stream)
 
